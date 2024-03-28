@@ -2,36 +2,65 @@ package br.com.challenge.aws_microservice01.controller;
 
 import br.com.challenge.aws_microservice01.enums.EventType;
 import br.com.challenge.aws_microservice01.model.Product;
-import br.com.challenge.aws_microservice01.repository.ProductRepository;
+import br.com.challenge.aws_microservice01.service.ProductNotifier;
 import br.com.challenge.aws_microservice01.service.ProductPublisher;
+import br.com.challenge.aws_microservice01.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
+
+import static java.lang.String.format;
 
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
 
-    private ProductRepository productRepository;
+    private static final Logger LOG = LoggerFactory.getLogger(
+            ProductNotifier.class);
+
     private ProductPublisher productPublisher;
 
+    private ProductService productService;
+
     @Autowired
-    public ProductController(ProductRepository productRepository, ProductPublisher productPublisher) {
-        this.productRepository = productRepository;
+    public ProductController(ProductPublisher productPublisher, ProductService productService) {
         this.productPublisher = productPublisher;
+        this.productService = productService;
+    }
+
+    @Operation(summary = "Realiza o upload de arquivos", method = "POST")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Upload de arquivo realizado com sucesso"),
+            @ApiResponse(responseCode = "422", description = "Dados de requisição inválida"),
+            @ApiResponse(responseCode = "400", description = "Parametros inválidos"),
+            @ApiResponse(responseCode = "500", description = "Erro ao realizar o upload de arquivo"),
+    })
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadDocuments(@RequestPart MultipartFile file) {
+        LOG.info(format("Upload do arquivo %s iniciado!", file.getOriginalFilename()));
+
+        return productService.uploadDocument(file);
+
     }
 
     @GetMapping
     public Iterable<Product> findAll() {
-        return productRepository.findAll();
+        return productService.findAllProducts();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Product> findById(@PathVariable long id) {
-        Optional<Product> optProduct = productRepository.findById(id);
+        Optional<Product> optProduct = productService.findByIdProduct(id);
         if (optProduct.isPresent()) {
             return new ResponseEntity<Product>(optProduct.get(), HttpStatus.OK);
         } else {
@@ -42,7 +71,7 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<Product> saveProduct(
             @RequestBody Product product) {
-        Product productCreated = productRepository.save(product);
+        Product productCreated = productService.saveProduct(product);
 
         productPublisher.publishProductEvent(productCreated, EventType.PRODUCT_CREATED, "matilde");
 
@@ -53,10 +82,10 @@ public class ProductController {
     @PutMapping(path = "/{id}")
     public ResponseEntity<Product> updateProduct(
             @RequestBody Product product, @PathVariable("id") long id) {
-        if (productRepository.existsById(id)) {
+        if (productService.exisitsById(id)) {
             product.setId(id);
 
-            Product productUpdated = productRepository.save(product);
+            Product productUpdated = productService.saveProduct(product);
 
             productPublisher.publishProductEvent(productUpdated, EventType.PRODUCT_UPDATE, "doralice");
 
@@ -69,11 +98,11 @@ public class ProductController {
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<Product> deleteProduct(@PathVariable("id") long id) {
-        Optional<Product> optProduct = productRepository.findById(id);
+        Optional<Product> optProduct = productService.findByIdProduct(id);
         if (optProduct.isPresent()) {
             Product product = optProduct.get();
 
-            productRepository.delete(product);
+            productService.delete(product);
 
             productPublisher.publishProductEvent(product, EventType.PRODUCT_DELETED, "hannah");
 
@@ -85,7 +114,7 @@ public class ProductController {
 
     @GetMapping(path = "/bycode")
     public ResponseEntity<Product> findByCode(@RequestParam String code) {
-        Optional<Product> optProduct = productRepository.findByCode(code);
+        Optional<Product> optProduct = productService.findByCode(code);
         if (optProduct.isPresent()) {
             return new ResponseEntity<Product>(optProduct.get(), HttpStatus.OK);
         } else {

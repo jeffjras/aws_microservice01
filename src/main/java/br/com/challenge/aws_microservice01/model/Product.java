@@ -14,13 +14,13 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
 
-    @Column(length = 32, nullable = false)
+    @Column(length = 32)
     private String name;
 
-    @Column(length = 24, nullable = false)
+    @Column(length = 24)
     private String type;
 
-    @Column(length = 8, nullable = false)
+    @Column(length = 8)
     private String code;
 
     private float price;
