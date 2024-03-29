@@ -33,8 +33,6 @@ public class ProductService {
 
     public ResponseEntity<String> uploadDocument(MultipartFile file) {
         try{
-            //notNull(file, "arquivo é obrigatório!");
-
             String rootFile = path + "/" + file.getOriginalFilename();
             File newDocument = new File(rootFile);
             FileOutputStream fileOutputStream = new FileOutputStream(newDocument, true);

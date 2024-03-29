@@ -38,16 +38,16 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @Operation(summary = "Realiza o upload de arquivos", method = "POST")
+    @Operation(summary = "Make upload files", method = "POST")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Upload de arquivo realizado com sucesso"),
-            @ApiResponse(responseCode = "422", description = "Dados de requisição inválida"),
-            @ApiResponse(responseCode = "400", description = "Parametros inválidos"),
-            @ApiResponse(responseCode = "500", description = "Erro ao realizar o upload de arquivo"),
+            @ApiResponse(responseCode = "200", description = "Upload file is done successfully"),
+            @ApiResponse(responseCode = "422", description = "Error with invalid data for request"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "500", description = "Error processing upload file"),
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadDocuments(@RequestPart MultipartFile file) {
-        LOG.info(format("Upload do arquivo %s iniciado!", file.getOriginalFilename()));
+        LOG.info(format("Upload file %s started!", file.getOriginalFilename()));
 
         return productService.uploadDocument(file);
 

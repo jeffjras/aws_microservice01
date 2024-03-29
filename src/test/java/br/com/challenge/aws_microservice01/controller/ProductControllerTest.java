@@ -1,9 +1,11 @@
 package br.com.challenge.aws_microservice01.controller;
 
 import br.com.challenge.aws_microservice01.enums.EventType;
+import br.com.challenge.aws_microservice01.mock.CreateProductRequest;
 import br.com.challenge.aws_microservice01.model.Product;
 import br.com.challenge.aws_microservice01.service.ProductPublisher;
 import br.com.challenge.aws_microservice01.service.ProductService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,10 +26,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,9 +47,6 @@ class ProductControllerTest {
     @Mock
     ProductPublisher productPublisher;
 
-    //@Autowired
-    //ProductRepository repository;
-
     private MockMvc mockMvc;
 
     private Product product;
@@ -53,6 +54,8 @@ class ProductControllerTest {
     private MockMultipartFile mockMultipartFile;
 
     private final Product mockProduct = mock(Product.class);
+
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
@@ -77,10 +80,12 @@ class ProductControllerTest {
                 "Test, Product!".getBytes()
         );
 
+        objectMapper = new ObjectMapper();
+
         mockMultipartFile = new MockMultipartFile("Teste1", "Teste1.pdf", MediaType.TEXT_PLAIN_VALUE,"Venda Processada.".getBytes(StandardCharsets.UTF_8));
     }
 
-    public void deveAceitarARequisicaoEChamarAServiceUploadArquivoComSucesso() throws Exception {
+    public void deve_Aceitar_Requisicao_Chamar_Service_Upload_ArquivoComSucesso() throws Exception {
         when(service.uploadDocument(mockMultipartFile)).thenReturn(ResponseEntity.ok("Documento Carregado Com Sucesso!"));
 
         mockMvc.perform(multipart("/teste-open-api")
@@ -95,7 +100,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void deveBuscarOsDadosDeProductPorNomeECodeComSucesso() throws Exception {
+    public void deve_Buscar_Dados_Product_PorNome_CodeComSucesso() throws Exception {
         when(service.buscaPrdoductPor(product.getName(), product.getCode())).thenReturn(Collections.singletonList(product));
 
         mockMvc.perform(get("/teste-open-api")
@@ -111,7 +116,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void deveRetonrarErroxxCasoNaoSejaPassadosParametrosObrigatorios() throws Exception {
+    public void deve_Retonrar_Erroxx_NaoSejaPassado_Parametro_Obrigatorios() throws Exception {
 
         mockMvc.perform(get("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,7 +129,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void deveProcessar_requisicao_ChamarServiceComSucesso() throws Exception {
+    public void deve_Processar_requisicao_ChamarServiceComSucesso() throws Exception {
         // when anything happen / have been any happen / whitch we to want that happen
         when(service.saveProduct(product)).thenReturn(new ResponseEntity<Product>(mockProduct, HttpStatus.OK).getBody());
         //method void
@@ -133,7 +138,6 @@ class ProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                         .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andReturn();
-
         assertNotNull(service);
         verify(service.findByIdProduct(mockProduct.getId()));
         verify(service.saveProduct(mockProduct));
@@ -142,25 +146,25 @@ class ProductControllerTest {
 
     @Test
     public void it_should_return_created_product() throws Exception{
-        /*CreateProductRequest request = new CreateProductRequest();
+        CreateProductRequest request = new CreateProductRequest();
         request.setId(1L);
         Product productMock = new Product();
         productMock.setId(request.getId());
-        when(repository.save(Product.class)).thenReturn(productMock);
-        mvc.perform(post("/product")
+        when(service.saveProduct(product)).thenReturn(mockProduct);
+        mockMvc.perform(post("/product")
                 .content(objectMapper.writeValueAsString(request))
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(HttpStatus.OK)
-                .andExpect(jsonPath("$.name").value(request.getName()));*/
+                .andExpect(MockMvcResultMatchers.status().isOk());
+                //.andExpect(jsonPath("$.name").value(request.getName()));
     }
 
     public void testHome() throws Exception {
-        /*String URL1="/api";
-        System.out.println(this.mvc.perform(get(URL1))
+        String URL1="/api";
+        System.out.println(this.mockMvc.perform(get(URL1))
                 .andDo(print()));
-        this.mvc.perform(get(URL1))
-                .andExpect(HttpStatus.OK)
-                .andExpect(content().string(containsString("products")));*/
+        this.mockMvc.perform(get(URL1))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(content().string(containsString("products")));
     }
 
     @Test
